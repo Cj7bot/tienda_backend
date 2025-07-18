@@ -1,0 +1,133 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block head_javascript %}
+    {{ parent() }}
+    {{ encore_entry_script_tags('app') }}
+{% endblock %}
+
+{% block head_stylesheets %}
+    {{ parent() }}
+    {{ encore_entry_link_tags('app') }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid px-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="h3 mb-2">Dashboard de E-commerce</h1>
+                <p class="text-muted">Aquí está lo que está pasando en tu negocio ahora mismo</p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle p-3 bg-success-subtle me-3">
+                            <i class="fas fa-shopping-cart fa-lg text-success"></i>
+                        </div>
+                        <div>
+                            <h3 class="h5 mb-2">{{ new_orders }} nuevas órdenes</h3>
+                            <p class="text-muted small mb-0">Esperando procesamiento</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle p-3 bg-warning-subtle me-3">
+                            <i class="fas fa-clock fa-lg text-warning"></i>
+                        </div>
+                        <div>
+                            <h3 class="h5 mb-2">{{ on_hold_orders }} órdenes</h3>
+                            <p class="text-muted small mb-0">En espera</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle p-3 bg-danger-subtle me-3">
+                            <i class="fas fa-box fa-lg text-danger"></i>
+                        </div>
+                        <div>
+                            <h3 class="h5 mb-2">{{ out_of_stock_products }} productos</h3>
+                            <p class="text-muted small mb-0">En catálogo</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h2 class="h5 mb-2">Ventas totales</h2>
+                                <p class="text-muted small mb-0">Pagos recibidos en todos los canales</p>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    {{ range_label }}
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item {% if range == '7d' %}active{% endif %}" href="{{ path('admin', {'range': '7d'}) }}">Últimos 7 días</a></li>
+                                    <li><a class="dropdown-item {% if range == '30d' %}active{% endif %}" href="{{ path('admin', {'range': '30d'}) }}">Últimos 30 días</a></li>
+                                    <li><a class="dropdown-item {% if range == 'month' %}active{% endif %}" href="{{ path('admin', {'range': 'month'}) }}">Este mes</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div style="height: 300px;">
+                            {{ render_chart(sales_chart) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="h5">Total de órdenes</h3>
+                                <p class="display-6 mb-0">{{ total_orders }}</p>
+                            </div>
+                            <div class="text-{% if order_change_percent >= 0 %}success{% else %}danger{% endif %}">
+                                <i class="fas fa-{% if order_change_percent >= 0 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
+                                {{ order_change_percent }}%
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0">Últimos 7 días</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="h5">Nuevos clientes</h3>
+                                <p class="display-6 mb-0">{{ new_customers }}</p>
+                            </div>
+                            <div class="text-success">
+                                <i class="fas fa-user-plus me-1"></i>
+                                Últimos 7 días
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0">Clientes registrados recientemente</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
