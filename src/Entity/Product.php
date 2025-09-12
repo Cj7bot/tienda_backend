@@ -2,9 +2,24 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
 
+#[ApiResource(
+    operations: [
+        new GetCollection(uriTemplate: '/products'),
+        new Get(uriTemplate: '/products/{id}'),
+        new Post(uriTemplate: '/products'),
+        new Put(uriTemplate: '/products/{id}'),
+        new Delete(uriTemplate: '/products/{id}')
+    ]
+)]
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 #[ORM\Table(name: 'productos')]
 class Product
@@ -37,6 +52,11 @@ class Product
 
     #[ORM\Column(type: 'string', length: 20)]
     private string $estado = 'disponible';
+
+    public function getId(): ?int
+    {
+        return $this->id_producto;
+    }
 
     public function getIdProducto(): ?int
     {

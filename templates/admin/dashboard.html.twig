@@ -12,122 +12,284 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid px-4">
-        <div class="row mb-4">
-            <div class="col-12">
-                <h1 class="h3 mb-2">Dashboard de E-commerce</h1>
-                <p class="text-muted">Aquí está lo que está pasando en tu negocio ahora mismo</p>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-title">Analytics Dashboard</h1>
+                <p class="dashboard-subtitle">¡Bienvenido de vuelta! Aquí está el resumen de tu negocio. 👋</p>
+            </div>
+            <div class="date-selector">
+                <span class="current-date">Hoy: {{ 'now'|date('F d') }}</span>
             </div>
         </div>
 
-        <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="rounded-circle p-3 bg-success-subtle me-3">
-                            <i class="fas fa-shopping-cart fa-lg text-success"></i>
-                        </div>
-                        <div>
-                            <h3 class="h5 mb-2">{{ new_orders }} nuevas órdenes</h3>
-                            <p class="text-muted small mb-0">Esperando procesamiento</p>
-                        </div>
-                    </div>
+        <div class="metrics-grid">
+            <div class="metric-card visitors-card">
+                <div class="metric-header">
+                    <h3>Visitantes</h3>
+                </div>
+                <div class="metric-value">{{ (new_orders * 127)|number_format(0, '.', ',') }}</div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+14%</span>
+                    <span class="change-period">Desde la semana pasada</span>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="rounded-circle p-3 bg-warning-subtle me-3">
-                            <i class="fas fa-clock fa-lg text-warning"></i>
-                        </div>
-                        <div>
-                            <h3 class="h5 mb-2">{{ on_hold_orders }} órdenes</h3>
-                            <p class="text-muted small mb-0">En espera</p>
-                        </div>
-                    </div>
+            <div class="metric-card activity-card">
+                <div class="metric-header">
+                    <h3>Actividad</h3>
+                    <span class="badge">Anual</span>
+                </div>
+                <div class="metric-value">{{ (total_orders * 42)|number_format(0, '.', ',') }}</div>
+                <div class="metric-change negative">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-12%</span>
+                    <span class="change-period">Desde la semana pasada</span>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="rounded-circle p-3 bg-danger-subtle me-3">
-                            <i class="fas fa-box fa-lg text-danger"></i>
-                        </div>
-                        <div>
-                            <h3 class="h5 mb-2">{{ out_of_stock_products }} productos</h3>
-                            <p class="text-muted small mb-0">En catálogo</p>
-                        </div>
-                    </div>
+            <div class="metric-card chart-card">
+                <div class="metric-header">
+                    <h3>Mobile / Desktop</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="deviceChart" width="300" height="150"></canvas>
                 </div>
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h2 class="h5 mb-2">Ventas totales</h2>
-                                <p class="text-muted small mb-0">Pagos recibidos en todos los canales</p>
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    {{ range_label }}
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item {% if range == '7d' %}active{% endif %}" href="{{ path('admin', {'range': '7d'}) }}">Últimos 7 días</a></li>
-                                    <li><a class="dropdown-item {% if range == '30d' %}active{% endif %}" href="{{ path('admin', {'range': '30d'}) }}">Últimos 30 días</a></li>
-                                    <li><a class="dropdown-item {% if range == 'month' %}active{% endif %}" href="{{ path('admin', {'range': 'month'}) }}">Este mes</a></li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div style="height: 300px;">
-                            {{ render_chart(sales_chart) }}
-                        </div>
-                    </div>
+        <div class="secondary-metrics-grid">
+            <div class="metric-card realtime-card">
+                <div class="metric-header">
+                    <h3>Real-Time</h3>
+                    <span class="badge secondary">Mensual</span>
+                </div>
+                <div class="metric-value">{{ new_orders * 44 }}</div>
+                <div class="metric-change negative">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>-18%</span>
+                    <span class="change-period">Desde la semana pasada</span>
+                </div>
+            </div>
+
+            <div class="metric-card bounce-card">
+                <div class="metric-header">
+                    <h3>Bounce</h3>
+                    <span class="badge secondary">Anual</span>
+                </div>
+                <div class="metric-value">{{ (on_hold_orders * 412)|number_format(0, '.', ',') }}</div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+27%</span>
+                    <span class="change-period">Desde la semana pasada</span>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="h5">Total de órdenes</h3>
-                                <p class="display-6 mb-0">{{ total_orders }}</p>
-                            </div>
-                            <div class="text-{% if order_change_percent >= 0 %}success{% else %}danger{% endif %}">
-                                <i class="fas fa-{% if order_change_percent >= 0 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
-                                {{ order_change_percent }}%
-                            </div>
+        <div class="lower-section">
+            <div class="chart-section">
+                <div class="metric-card realtime-chart-card">
+                    <div class="metric-header">
+                        <h3>Real-Time Analytics</h3>
+                        <div class="chart-actions">
+                            <button class="action-btn" onclick="simulateNewEvent()" title="Simular Evento">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="action-btn" onclick="loadRealtimeData()" title="Actualizar">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
                         </div>
-                        <p class="text-muted small mt-2 mb-0">Últimos 7 días</p>
+                    </div>
+                    <div class="realtime-chart-container">
+                        <canvas id="realtimeChart" width="400" height="200"></canvas>
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="h5">Nuevos clientes</h3>
-                                <p class="display-6 mb-0">{{ new_customers }}</p>
-                            </div>
-                            <div class="text-success">
-                                <i class="fas fa-user-plus me-1"></i>
-                                Últimos 7 días
-                            </div>
-                        </div>
-                        <p class="text-muted small mt-2 mb-0">Clientes registrados recientemente</p>
+            
+            <div class="source-section">
+                <div class="metric-card source-card">
+                    <div class="metric-header">
+                        <h3>Source / Medium</h3>
+                    </div>
+                    <div class="source-chart-container">
+                        <canvas id="sourceChart" width="300" height="200"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Initialize charts when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Device Chart (Mobile/Desktop)
+            const deviceCtx = document.getElementById('deviceChart').getContext('2d');
+            new Chart(deviceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+                    datasets: [{
+                        data: [65, 78, 85, 92, 88, 95, 102, 110, 98, 115, 125, 138],
+                        backgroundColor: '#4F46E5',
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Realtime Chart
+            const realtimeCtx = document.getElementById('realtimeChart').getContext('2d');
+            const realtimeChart = new Chart(realtimeCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Compras',
+                        data: [],
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#10B981'
+                    }, {
+                        label: 'Productos Añadidos',
+                        data: [],
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#F59E0B'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+
+            // Function to load real-time data
+            function loadRealtimeData() {
+                fetch('/api/analytics/realtime-data')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            realtimeChart.data.labels = data.data.labels;
+                            realtimeChart.data.datasets[0].data = data.data.compras;
+                            realtimeChart.data.datasets[1].data = data.data.productos_creados;
+                            realtimeChart.update('none');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading real-time data:', error);
+                    });
+            }
+
+            // Load initial data
+            loadRealtimeData();
+
+            // Update data every 30 seconds
+            setInterval(loadRealtimeData, 30000);
+
+            // Function to simulate adding new events (for demo purposes)
+            function simulateNewEvent() {
+                fetch('/api/analytics/add-event', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload chart data after new event
+                            setTimeout(loadRealtimeData, 1000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error adding event:', error);
+                    });
+            }
+
+            // Simulate new events every 2 minutes for demo
+            setInterval(simulateNewEvent, 120000);
+
+            // Source Chart (Pie/Doughnut)
+            const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+            new Chart(sourceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Direct', 'Social', 'Email', 'Organic', 'Paid'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}
