@@ -1,0 +1,9 @@
+mercure:
+    hubs:
+        default:
+            # Usamos los valores directamente para depuración
+            url: 'http://mercure/.well-known/mercure'
+            public_url: 'https://localhost/.well-known/mercure'
+            jwt:
+                secret: '!ChangeThisMercureHubJWTSecretKey!'
+                publish: '*'

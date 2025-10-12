@@ -18,9 +18,9 @@ class Order
     #[ORM\Column(name: 'id_pedido', type: 'string', length: 10)]
     private string $id;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'id_usuario', referencedColumnName: 'id_usuario', nullable: false)]
-    private User $client;
+    #[ORM\ManyToOne(targetEntity: Cliente::class)]
+    #[ORM\JoinColumn(name: 'id_cliente', referencedColumnName: 'id_cliente', nullable: false)]
+    private Cliente $client;
 
     #[ORM\Column(name: 'fecha_pedido', type: 'datetime')]
     private \DateTimeInterface $orderDate;
@@ -45,12 +45,12 @@ class Order
         return $this;
     }
 
-    public function getClient(): User
+    public function getClient(): Cliente
     {
         return $this->client;
     }
 
-    public function setClient(User $client): self
+    public function setClient(Cliente $client): self
     {
         $this->client = $client;
         return $this;

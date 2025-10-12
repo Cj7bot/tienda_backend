@@ -10,11 +10,12 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
     operations: [
-        new GetCollection(uriTemplate: '/products'),
-        new Get(uriTemplate: '/products/{id}'),
+        new GetCollection(uriTemplate: '/products', normalizationContext: ['groups' => 'product:read']),
+        new Get(uriTemplate: '/products/{id}', normalizationContext: ['groups' => 'product:read']),
         new Post(uriTemplate: '/products'),
         new Put(uriTemplate: '/products/{id}'),
         new Delete(uriTemplate: '/products/{id}')
@@ -27,31 +28,33 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
+    #[Groups(['product:read'])]
     private ?int $id_producto = null;
 
-    #[ORM\Column(type: 'string', length: 50)]
-    private string $codigo;
-
     #[ORM\Column(type: 'string', length: 100)]
+    #[Groups(['product:read'])]
     private string $nombre;
 
     #[ORM\Column(type: 'text')]
+    #[Groups(['product:read'])]
     private string $descripcion;
 
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $precio;
-
-    #[ORM\Column(type: 'integer')]
-    private int $stock;
-
-    #[ORM\Column(type: 'string', length: 50)]
-    private string $categoria;
+    #[ORM\ManyToOne(targetEntity: Categoria::class, inversedBy: 'productos')]
+    #[ORM\JoinColumn(name: 'id_categoria', referencedColumnName: 'id_categoria', nullable: false)]
+    #[Groups(['product:read'])]
+    private Categoria $categoria;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    private ?string $imagen = null;
+    #[Groups(['product:read'])]
+    private ?string $imagen_producto = null;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    private string $estado = 'disponible';
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    #[Groups(['product:read'])]
+    private string $precio;
+
+    #[ORM\Column(type: 'integer')]
+    #[Groups(['product:read'])]
+    private int $stock = 0;
 
     public function getId(): ?int
     {
@@ -61,17 +64,6 @@ class Product
     public function getIdProducto(): ?int
     {
         return $this->id_producto;
-    }
-
-    public function getCodigo(): string
-    {
-        return $this->codigo;
-    }
-
-    public function setCodigo(string $codigo): self
-    {
-        $this->codigo = $codigo;
-        return $this;
     }
 
     public function getNombre(): string
@@ -96,12 +88,34 @@ class Product
         return $this;
     }
 
-    public function getPrecio(): float
+    public function getCategoria(): Categoria
+    {
+        return $this->categoria;
+    }
+
+    public function setCategoria(Categoria $categoria): self
+    {
+        $this->categoria = $categoria;
+        return $this;
+    }
+
+    public function getImagenProducto(): ?string
+    {
+        return $this->imagen_producto;
+    }
+
+    public function setImagenProducto(?string $imagen_producto): self
+    {
+        $this->imagen_producto = $imagen_producto;
+        return $this;
+    }
+
+    public function getPrecio(): string
     {
         return $this->precio;
     }
 
-    public function setPrecio(float $precio): self
+    public function setPrecio(string $precio): self
     {
         $this->precio = $precio;
         return $this;
@@ -115,42 +129,6 @@ class Product
     public function setStock(int $stock): self
     {
         $this->stock = $stock;
-        return $this;
-    }
-
-    public function getCategoria(): string
-    {
-        return $this->categoria;
-    }
-
-    public function setCategoria(string $categoria): self
-    {
-        $this->categoria = $categoria;
-        return $this;
-    }
-
-    public function getImagen(): ?string
-    {
-        return $this->imagen;
-    }
-
-    public function setImagen(?string $imagen): self
-    {
-        $this->imagen = $imagen;
-        return $this;
-    }
-
-    public function getEstado(): string
-    {
-        return $this->estado;
-    }
-
-    public function setEstado(string $estado): self
-    {
-        if (!in_array($estado, ['disponible', 'agotado', 'descontinuado'])) {
-            throw new \InvalidArgumentException('Estado inválido');
-        }
-        $this->estado = $estado;
         return $this;
     }
 }

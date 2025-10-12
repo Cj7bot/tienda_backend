@@ -3,11 +3,15 @@
 namespace App\Entity;
 
 use App\Repository\ClienteRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: ClienteRepository::class)]
 #[ORM\Table(name: 'clientes')]
-class Cliente
+class Cliente implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -20,8 +24,11 @@ class Cliente
     #[ORM\Column(type: 'string', length: 100)]
     private string $apellido;
 
-    #[ORM\Column(type: 'string', length: 100)]
+    #[ORM\Column(type: 'string', length: 100, unique: true)]
     private string $email;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $password;
 
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $telefono = null;
@@ -32,19 +39,38 @@ class Cliente
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $dni = null;
 
+    #[ORM\Column(type: 'boolean')]
+    private bool $estado = true;
+
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $fecha_registro;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    private string $estado = 'activo';
+    #[ORM\Column(type: 'json')]
+    private array $roles = ['ROLE_USER'];
 
-    #[ORM\OneToOne(inversedBy: 'cliente', targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'id_usuario', referencedColumnName: 'id_usuario', nullable: true)]
-    private ?User $usuario = null;
+    #[ORM\OneToMany(mappedBy: 'cliente', targetEntity: Pedido::class)]
+    private Collection $pedidos;
+
+    #[ORM\OneToMany(mappedBy: 'cliente', targetEntity: Pago::class)]
+    private Collection $pagos;
+
+    #[ORM\OneToMany(mappedBy: 'cliente', targetEntity: DetalleBoleta::class)]
+    private Collection $detalleBoletas;
+
+    #[ORM\OneToMany(mappedBy: 'cliente', targetEntity: DetalleFactura::class)]
+    private Collection $detalleFacturas;
+
+    #[ORM\OneToMany(mappedBy: 'cliente', targetEntity: Devoluciones::class)]
+    private Collection $devoluciones;
 
     public function __construct()
     {
         $this->fecha_registro = new \DateTime();
+        $this->pedidos = new ArrayCollection();
+        $this->pagos = new ArrayCollection();
+        $this->detalleBoletas = new ArrayCollection();
+        $this->detalleFacturas = new ArrayCollection();
+        $this->devoluciones = new ArrayCollection();
     }
 
     public function getIdCliente(): ?int
@@ -85,6 +111,17 @@ class Cliente
         return $this;
     }
 
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
+        return $this;
+    }
+
     public function getTelefono(): ?string
     {
         return $this->telefono;
@@ -118,6 +155,22 @@ class Cliente
         return $this;
     }
 
+    public function getEstado(): bool
+    {
+        return $this->estado;
+    }
+
+    public function setEstado(bool $estado): self
+    {
+        $this->estado = $estado;
+        return $this;
+    }
+
+    public function isActivo(): bool
+    {
+        return $this->estado;
+    }
+
     public function getFechaRegistro(): \DateTimeInterface
     {
         return $this->fecha_registro;
@@ -129,28 +182,78 @@ class Cliente
         return $this;
     }
 
-    public function getEstado(): string
+    public function getRoles(): array
     {
-        return $this->estado;
+        return $this->roles;
     }
 
-    public function setEstado(string $estado): self
+    public function setRoles(array $roles): self
     {
-        if (!in_array($estado, ['activo', 'inactivo'])) {
-            throw new \InvalidArgumentException('Estado inválido');
+        $this->roles = $roles;
+        return $this;
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
+    public function eraseCredentials(): void
+    {
+    }
+
+    public function getPedidos(): Collection
+    {
+        return $this->pedidos;
+    }
+
+    public function addPedido(Pedido $pedido): self
+    {
+        if (!$this->pedidos->contains($pedido)) {
+            $this->pedidos->add($pedido);
+            $pedido->setCliente($this);
         }
-        $this->estado = $estado;
         return $this;
     }
 
-    public function getUsuario(): ?User
+    public function removePedido(Pedido $pedido): self
     {
-        return $this->usuario;
+        $this->pedidos->removeElement($pedido);
+        return $this;
     }
 
-    public function setUsuario(?User $usuario): self
+    public function getPagos(): Collection
     {
-        $this->usuario = $usuario;
+        return $this->pagos;
+    }
+
+    public function addPago(Pago $pago): self
+    {
+        if (!$this->pagos->contains($pago)) {
+            $this->pagos->add($pago);
+            $pago->setCliente($this);
+        }
         return $this;
+    }
+
+    public function removePago(Pago $pago): self
+    {
+        $this->pagos->removeElement($pago);
+        return $this;
+    }
+
+    public function getDetalleBoletas(): Collection
+    {
+        return $this->detalleBoletas;
+    }
+
+    public function getDetalleFacturas(): Collection
+    {
+        return $this->detalleFacturas;
+    }
+
+    public function getDevoluciones(): Collection
+    {
+        return $this->devoluciones;
     }
 }

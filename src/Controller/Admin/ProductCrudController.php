@@ -8,9 +8,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\MoneyField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ImageField;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 
 class ProductCrudController extends AbstractCrudController
 {
@@ -23,39 +22,21 @@ class ProductCrudController extends AbstractCrudController
     {
         return [
             IntegerField::new('id', 'ID')->hideOnForm(),
-            TextField::new('codigo', 'Código'),
             TextField::new('nombre', 'Nombre'),
             TextareaField::new('descripcion', 'Descripción')->hideOnIndex(),
             MoneyField::new('precio', 'Precio')
-                ->setCurrency('EUR')
+                ->setCurrency('USD')
                 ->setStoredAsCents(false),
             IntegerField::new('stock', 'Stock'),
-            ChoiceField::new('categoria', 'Categoría')
-                ->setChoices([
-                    'Superfood Powders' => 'superfood_powders',
-                    'Capsules' => 'capsules',
-                    'Diabetic Control' => 'diabetic_control',
-                    'Prostate Balance' => 'prostate_balance',
-                    'Intestinal Wellness' => 'intestinal_wellness',
-                    'Male Supplements' => 'male_supplements',
-                    'Female Supplements' => 'female_supplements',
-                    'Vegan Protein Powders' => 'vegan_protein_powders',
-                    'Baking Flours' => 'baking_flours',
-                    'Fruit Powders' => 'fruit_powders',
-                    'Herbal Teas' => 'herbal_teas',
-                    'Wholesale for Retailers' => 'wholesale_for_retailers',
-                    'Natural Sweeteners' => 'natural_sweeteners',
-                    'Herbal Powders' => 'herbal_powders'
-                ])
-                ->setRequired(true),
-            
+            AssociationField::new('categoria', 'Categoría'),
+
             // Campo de imagen para mostrar en el listado
-            ImageField::new('imagen', 'Imagen')
+            ImageField::new('imagenProducto', 'Imagen')
                 ->setBasePath('/uploads/products/')
                 ->onlyOnIndex(),
-            
+
             // Campo de imagen para formularios (crear/editar)
-            ImageField::new('imagen', 'Imagen')
+            ImageField::new('imagenProducto', 'Imagen')
                 ->setBasePath('/uploads/products/')
                 ->setUploadDir('public/uploads/products/')
                 ->setUploadedFileNamePattern('[slug]-[timestamp].[extension]')
@@ -69,14 +50,7 @@ class ProductCrudController extends AbstractCrudController
                         );
                     }
                 ])
-                ->hideOnIndex(),
-                
-            ChoiceField::new('estado', 'Estado')
-                ->setChoices([
-                    'Disponible' => 'disponible',
-                    'Agotado' => 'agotado',
-                    'Descontinuado' => 'descontinuado'
-                ])
+                ->hideOnIndex()
         ];
     }
 }

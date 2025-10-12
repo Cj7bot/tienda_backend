@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Comprobante de Compra - Pedido #{{ order.idPedido }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 12px;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        .header, .footer {
+            padding: 20px;
+        }
+        .header {
+            display: table;
+            width: 100%;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+        .logo {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .logo h1 {
+            color: #2E8B57; /* SeaGreen */
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .logo span {
+            font-size: 12px;
+            color: #777;
+        }
+        .invoice-details {
+            display: table-cell;
+            text-align: right;
+            vertical-align: middle;
+        }
+        .invoice-details .box {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 120px;
+            height: 25px;
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .customer-info {
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table th {
+            background-color: #f0f0f0;
+            text-transform: uppercase;
+        }
+        .items-table .text-right { text-align: right; }
+        .items-table .text-center { text-align: center; }
+        .totals-section {
+            padding: 0 20px;
+            page-break-inside: avoid;
+        }
+        .totals-table {
+            width: 40%;
+            margin-left: 60%;
+            border-collapse: collapse;
+        }
+        .totals-table td {
+            padding: 8px;
+            border: 1px solid #000;
+        }
+        .totals-table .label {
+            text-align: right;
+            font-weight: bold;
+        }
+        .grand-total {
+            margin-top: 20px;
+            text-align: right;
+            padding-right: 20px;
+        }
+        .grand-total .total-bar {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            display: inline-block;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .barcode {
+            margin-top: 40px;
+            text-align: left;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <h1>pure inka foods</h1>
+                <span>INTERNATIONAL</span>
+            </div>
+            <div class="invoice-details">
+                <div class="box">{{ order.idPedido }}</div>
+                <div class="box">{{ order.fechaPedido|date('d/m/Y') }}</div>
+            </div>
+        </div>
+
+        <div class="customer-info">
+            <strong>Cliente:</strong> {{ order.cliente.nombre }} {{ order.cliente.apellido }}<br>
+            <strong>Email:</strong> {{ order.cliente.email }}
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th class="text-center">Cant.</th>
+                    <th>Descripción</th>
+                    <th class="text-right">Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.detallesPedido %}
+                <tr>
+                    <td>{{ item.producto.id }}</td>
+                    <td>{{ item.producto.nombre }}</td>
+                    <td class="text-center">{{ item.cantidad }}</td>
+                    <td>{{ item.producto.descripcion|slice(0, 50) }}...</td>
+                    <td class="text-right">S/ {{ item.precioUnitario|number_format(2, '.', ',') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="totals-section">
+            <table class="totals-table">
+                <tbody>
+                    <tr>
+                        <td class="label">Sub-Total</td>
+                        <td class="text-right">S/ {{ (order.total / 1.18)|number_format(2, '.', ',') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Taxes (18%)</td>
+                        <td class="text-right">S/ {{ (order.total - (order.total / 1.18))|number_format(2, '.', ',') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Total</td>
+                        <td class="text-right">S/ {{ order.total|number_format(2, '.', ',') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grand-total">
+            <span class="total-bar">Total: S/ {{ order.total|number_format(2, '.', ',') }}</span>
+        </div>
+
+        <div class="barcode">
+            <p>Gracias por su compra.</p>
+            {# Aquí podrías generar un código de barras real si tuvieras un bundle para ello #}
+            <p><strong>ID Pedido:</strong> {{ order.idPedido }}</p>
+        </div>
+
+    </div>
+</body>
+</html>

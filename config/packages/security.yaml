@@ -1,12 +1,13 @@
 security:
     password_hashers:
-        App\Entity\User:
+        App\Entity\Cliente:
             algorithm: auto
+            cost: 12  # Aumentar la seguridad del hash
 
     providers:
         app_user_provider:
             entity:
-                class: App\Entity\User
+                class: App\Entity\Cliente
                 property: email
 
     firewalls:
@@ -14,11 +15,21 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        main:
+        login:
+            pattern: ^/api/login
+            stateless: true
+            json_login:
+                check_path: /api/login
+                username_path: username
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        api:
+            pattern: ^/api
             stateless: true
             provider: app_user_provider
-            custom_authenticator: App\Security\UserAuthenticator
-            entry_point: App\Security\UserAuthenticator
+            jwt: ~
 
     access_control:
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
@@ -28,4 +39,5 @@ security:
         - { path: ^/api/categories, roles: PUBLIC_ACCESS }
         - { path: ^/api/upload-image, roles: PUBLIC_ACCESS }
         - { path: ^/api/analytics, roles: PUBLIC_ACCESS }
+        - { path: ^/api$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

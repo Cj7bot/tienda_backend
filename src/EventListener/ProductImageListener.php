@@ -30,8 +30,8 @@ class ProductImageListener implements EventSubscriberInterface
             return;
         }
 
-        $imagen = $entity->getImagen();
-        
+        $imagen = $entity->getImagenProducto();
+
         if ($imagen instanceof UploadedFile) {
             // Generar nombre único para la imagen
             $originalFilename = pathinfo($imagen->getClientOriginalName(), PATHINFO_FILENAME);
@@ -44,13 +44,13 @@ class ProductImageListener implements EventSubscriberInterface
             try {
                 // Mover el archivo al directorio de uploads
                 $imagen->move($this->uploadDir, $newFilename);
-                
+
                 // Actualizar la entidad con el nombre del archivo
-                $entity->setImagen($newFilename);
-                
+                $entity->setImagenProducto($newFilename);
+
             } catch (\Exception $e) {
                 // En caso de error, mantener el valor anterior o null
-                $entity->setImagen(null);
+                $entity->setImagenProducto(null);
             }
         }
     }

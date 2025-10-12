@@ -28,27 +28,29 @@ class ProductController extends AbstractController
             
             if ($category === 'all') {
                 // Obtener todos los productos
-                $products = $repository->findBy(['estado' => 'disponible']);
+                $products = $repository->findAll();
             } else {
-                // Filtrar por categoría específica
-                $products = $repository->findBy([
-                    'categoria' => $category,
-                    'estado' => 'disponible'
-                ]);
+                // Filtrar por categoría específica usando el ID de categoría
+                $categoriaRepository = $this->entityManager->getRepository(\App\Entity\Categoria::class);
+                $categoriaEntity = $categoriaRepository->findOneBy(['nombre' => $category]);
+
+                if ($categoriaEntity) {
+                    $products = $repository->findBy(['categoria' => $categoriaEntity]);
+                } else {
+                    $products = [];
+                }
             }
 
             $productData = [];
             foreach ($products as $product) {
                 $productData[] = [
                     'id' => $product->getId(),
-                    'codigo' => $product->getCodigo(),
                     'nombre' => $product->getNombre(),
                     'descripcion' => $product->getDescripcion(),
                     'precio' => $product->getPrecio(),
                     'stock' => $product->getStock(),
-                    'categoria' => $product->getCategoria(),
-                    'imagen' => $product->getImagen() ? '/uploads/products/' . $product->getImagen() : null,
-                    'estado' => $product->getEstado()
+                    'categoria' => $product->getCategoria()->getNombre(),
+                    'imagen' => $product->getImagenProducto() ? '/uploads/products/' . $product->getImagenProducto() : null
                 ];
             }
 
@@ -71,60 +73,40 @@ class ProductController extends AbstractController
     public function getCategoriesWithCount(): JsonResponse
     {
         try {
-            $repository = $this->entityManager->getRepository(Product::class);
-            
             // Obtener todas las categorías con su conteo
             $query = $this->entityManager->createQuery(
-                'SELECT p.categoria, COUNT(p.id_producto) as count 
-                FROM App\Entity\Product p 
-                WHERE p.estado = :estado
-                GROUP BY p.categoria'
+                'SELECT c.nombre, COUNT(p.id_producto) as count
+                FROM App\Entity\Categoria c
+                LEFT JOIN App\Entity\Product p WITH p.categoria = c
+                GROUP BY c.id_categoria, c.nombre'
             );
-            $query->setParameter('estado', 'disponible');
             $categoryStats = $query->getResult();
 
             // Preparar datos para el frontend
-            $categories = [
-                'all' => [
-                    'name' => 'All',
-                    'value' => 'all',
-                    'count' => 0
-                ]
-            ];
-
+            $categories = [];
             $totalCount = 0;
-            foreach ($categoryStats as $stat) {
-                $categoryKey = $stat['categoria'];
-                $count = (int)$stat['count'];
-                $totalCount += $count;
-                
-                // Mapear nombres legibles
-                $categoryNames = [
-                    'superfood_powders' => 'Superfood Powders',
-                    'capsules' => 'Capsules',
-                    'diabetic_control' => 'Diabetic Control',
-                    'prostate_balance' => 'Prostate Balance',
-                    'intestinal_wellness' => 'Intestinal Wellness',
-                    'male_supplements' => 'Male Supplements',
-                    'female_supplements' => 'Female Supplements',
-                    'vegan_protein_powders' => 'Vegan Protein Powders',
-                    'baking_flours' => 'Baking Flours',
-                    'fruit_powders' => 'Fruit Powders',
-                    'herbal_teas' => 'Herbal Teas',
-                    'wholesale_for_retailers' => 'Wholesale for Retailers',
-                    'natural_sweeteners' => 'Natural Sweeteners',
-                    'herbal_powders' => 'Herbal Powders'
-                ];
 
-                $categories[$categoryKey] = [
-                    'name' => $categoryNames[$categoryKey] ?? ucfirst(str_replace('_', ' ', $categoryKey)),
-                    'value' => $categoryKey,
+            foreach ($categoryStats as $stat) {
+                $categoryName = $stat['nombre'];
+                $count = (int)$stat['count'];
+
+                if ($categoryName !== 'All') {
+                    $totalCount += $count;
+                }
+
+                $categories[] = [
+                    'name' => $categoryName,
+                    'value' => strtolower(str_replace(' ', '_', $categoryName)),
                     'count' => $count
                 ];
             }
 
-            // Actualizar el conteo de "All"
-            $categories['all']['count'] = $totalCount;
+            // Agregar "All" al principio con el total
+            array_unshift($categories, [
+                'name' => 'All',
+                'value' => 'all',
+                'count' => $totalCount
+            ]);
 
             return new JsonResponse([
                 'success' => true,

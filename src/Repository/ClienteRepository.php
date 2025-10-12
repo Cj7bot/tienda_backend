@@ -39,16 +39,11 @@ class ClienteRepository extends ServiceEntityRepository
         }
     }
 
-    public function findByUser(string $userId): ?Cliente
-    {
-        return $this->findOneBy(['usuario' => $userId]);
-    }
-
     public function findActiveClients(): array
     {
         return $this->createQueryBuilder('c')
             ->andWhere('c.estado = :estado')
-            ->setParameter('estado', 'activo')
+            ->setParameter('estado', true)
             ->orderBy('c.fecha_registro', 'DESC')
             ->getQuery()
             ->getResult();
