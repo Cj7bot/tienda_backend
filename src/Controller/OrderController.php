@@ -7,6 +7,7 @@ use App\Entity\DetallePedido;
 use App\Entity\Pedido;
 use App\Entity\Product;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,12 +28,13 @@ class OrderController extends AbstractController
         private Security $security,
         private HubInterface $hub,
         private MailerInterface $mailer,
-        #[Target('knp_snappy.pdf')] private Pdf $knpSnappyPdf
+        private LoggerInterface $logger
     ) {}
 
     #[Route('/api/checkout/process-order', name: 'process_order', methods: ['POST'])]
     public function processOrder(Request $request): Response
     {
+        $knpSnappyPdf = $this->container->get('knp_snappy.pdf');
         $data = json_decode($request->getContent(), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -63,6 +65,7 @@ class OrderController extends AbstractController
 
         $this->entityManager->beginTransaction();
         try {
+            $this->logger->info('Iniciando procesamiento de pedido.');
             $cantidadTotal = 0;
             $totalPedido = 0;
 
@@ -98,19 +101,27 @@ class OrderController extends AbstractController
             $this->entityManager->persist($pedido);
             $this->entityManager->flush();
 
-            // --- Enviar correo de confirmación con PDF ---
-            $html = $this->renderView('invoice/invoice.html.twig', ['order' => $pedido]);
-            $pdfContent = $this->knpSnappyPdf->getOutputFromHtml($html);
+            // --- Enviar correo de confirmación con PDF (en un bloque try-catch para no detener el flujo) ---
+            try {
+                $this->logger->info('Generando PDF para el pedido ' . $pedido->getIdPedido());
+                $html = $this->renderView('invoice/invoice.html.twig', ['order' => $pedido]);
+                $pdfContent = $knpSnappyPdf->getOutputFromHtml($html);
+                $this->logger->info('PDF generado correctamente.');
 
-            $email = (new Email())
-                ->from('ventas@pureinkafoods.com')
-                ->to($cliente->getEmail())
-                ->subject('Confirmación de tu pedido #' . $pedido->getIdPedido())
-                ->text('¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.')
-                ->html('<p>¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.</p>')
-                ->attach($pdfContent, sprintf('comprobante-pedido-%s.pdf', $pedido->getIdPedido()), 'application/pdf');
+                $this->logger->info('Enviando correo de confirmación a ' . $cliente->getEmail());
+                $email = (new Email())
+                    ->from('ventas@pureinkafoods.com')
+                    ->to($cliente->getEmail())
+                    ->subject('Confirmación de tu pedido #' . $pedido->getIdPedido())
+                    ->text('¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.')
+                    ->html('<p>¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.</p>')
+                    ->attach($pdfContent, sprintf('comprobante-pedido-%s.pdf', $pedido->getIdPedido()), 'application/pdf');
 
-            $this->mailer->send($email);
+                $this->mailer->send($email);
+                $this->logger->info('Correo de confirmación enviado con éxito.');
+            } catch (\Exception $e) {
+                $this->logger->error('Error al generar PDF o enviar correo: ' . $e->getMessage(), ['exception' => $e]);
+            }
             // --- Fin del envío de correo ---
 
             // Publicar actualización a Mercure
@@ -123,19 +134,21 @@ class OrderController extends AbstractController
             $this->entityManager->commit();
 
         } catch (\Exception $e) {
+            $this->logger->error('Error al procesar el pedido: ' . $e->getMessage(), ['exception' => $e]);
             $this->entityManager->rollback();
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
         return $this->json([
-            'message' => 'Pedido procesado con éxito',
+            'message' => 'Pago realizado correctamente',
             'orderId' => $pedido->getIdPedido()
         ], Response::HTTP_CREATED);
     }
 
     #[Route('/order/{id}/invoice', name: 'order_invoice_pdf', methods: ['GET'])]
-    public function generateInvoicePdf(Pedido $pedido, #[Target('knp_snappy.pdf')] Pdf $knpSnappyPdf): Response
+    public function generateInvoicePdf(Pedido $pedido): Response
     {
+        $knpSnappyPdf = $this->container->get('knp_snappy.pdf');
         if (!$pedido) {
             throw $this->createNotFoundException('El pedido no existe.');
         }
