@@ -97,9 +97,9 @@ class OrderRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('o')
             ->select('COUNT(o.id)')
             ->where('o.orderDate >= :lastWeekStart')
-            ->andWhere('o.status = :status')
+            ->andWhere('o.estado = :estado')
             ->setParameter('lastWeekStart', $lastWeekStart)
-            ->setParameter('status', Order::STATUS_COMPLETED)
+            ->setParameter('estado', Order::STATUS_COMPLETED)
             ->getQuery()
             ->getSingleScalarResult();
     }
@@ -113,10 +113,10 @@ class OrderRepository extends ServiceEntityRepository
             ->select('COUNT(o.id)')
             ->where('o.orderDate >= :twoWeeksAgo')
             ->andWhere('o.orderDate < :oneWeekAgo')
-            ->andWhere('o.status = :status')
+            ->andWhere('o.estado = :estado')
             ->setParameter('twoWeeksAgo', $twoWeeksAgo)
             ->setParameter('oneWeekAgo', $oneWeekAgo)
-            ->setParameter('status', Order::STATUS_COMPLETED)
+            ->setParameter('estado', Order::STATUS_COMPLETED)
             ->getQuery()
             ->getSingleScalarResult();
     }

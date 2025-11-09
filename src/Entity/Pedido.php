@@ -11,11 +11,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'pedido')]
 class Pedido
 {
-    public const STATUS_PENDING = 'pendiente';
-    public const STATUS_PROCESSING = 'procesando';
-    public const STATUS_COMPLETED = 'completado';
-    public const STATUS_CANCELLED = 'cancelado';
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
@@ -32,7 +27,7 @@ class Pedido
     private \DateTimeInterface $fecha_pedido;
 
     #[ORM\Column(type: 'string', length: 20)]
-    private string $estado = self::STATUS_PENDING;
+    private string $estado = 'pendiente';
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
     private ?string $total = null;
@@ -99,7 +94,7 @@ class Pedido
 
     public function setEstado(string $estado): self
     {
-        if (!in_array($estado, [self::STATUS_PENDING, self::STATUS_PROCESSING, self::STATUS_COMPLETED, self::STATUS_CANCELLED])) {
+        if (!in_array($estado, ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'])) {
             throw new \InvalidArgumentException('Estado inválido');
         }
         $this->estado = $estado;

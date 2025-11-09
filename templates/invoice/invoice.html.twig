@@ -143,7 +143,7 @@
                     <td>{{ item.producto.nombre }}</td>
                     <td class="text-center">{{ item.cantidad }}</td>
                     <td>{{ item.producto.descripcion|slice(0, 50) }}...</td>
-                    <td class="text-right">$ {{ item.precioUnitario|number_format(2, '.', ',') }}</td>
+                    <td class="text-right">S/ {{ item.precioUnitario|number_format(2, '.', ',') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -154,38 +154,22 @@
                 <tbody>
                     <tr>
                         <td class="label">Sub-Total</td>
-                        <td class="text-right">$ {{ (order.total / 1.18)|number_format(2, '.', ',') }}</td>
+                        <td class="text-right">S/ {{ (order.total / 1.18)|number_format(2, '.', ',') }}</td>
                     </tr>
                     <tr>
                         <td class="label">Taxes (18%)</td>
-                        <td class="text-right">$ {{ (order.total - (order.total / 1.18))|number_format(2, '.', ',') }}</td>
+                        <td class="text-right">S/ {{ (order.total - (order.total / 1.18))|number_format(2, '.', ',') }}</td>
                     </tr>
                     <tr>
                         <td class="label">Total</td>
-                        <td class="text-right">$ {{ order.total|number_format(2, '.', ',') }}</td>
+                        <td class="text-right">S/ {{ order.total|number_format(2, '.', ',') }}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="grand-total">
-            <span class="total-bar">Total: $ {{ order.total|number_format(2, '.', ',') }}</span>
-        </div>
-
-        <div class="totals-section" style="margin-top: 20px;">
-            {% set exchange_rate = 3.34 %}
-            <table class="totals-table">
-                <tbody>
-                    <tr>
-                        <td class="label">Tasa de Cambio (USD a PEN)</td>
-                        <td class="text-right">{{ exchange_rate }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Total en Soles</td>
-                        <td class="text-right">S/ {{ (order.total * exchange_rate)|number_format(2, '.', ',') }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <span class="total-bar">Total: S/ {{ order.total|number_format(2, '.', ',') }}</span>
         </div>
 
         <div class="barcode">

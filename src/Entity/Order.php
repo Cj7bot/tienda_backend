@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\OrderRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
@@ -31,13 +29,10 @@ class Order
     private string $total;
 
     #[ORM\Column(name: 'estado', type: 'string', length: 20)]
-    private string $status = self::STATUS_PENDING;
+    private string $estado = self::STATUS_PENDING;
 
     #[ORM\Column(name: 'notas', type: 'text', nullable: true)]
     private ?string $notes = null;
-
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: DetallePedido::class, cascade: ['persist', 'remove'])]
-    private Collection $detallesPedido;
 
     public function getId(): string
     {
@@ -83,47 +78,17 @@ class Order
         return $this;
     }
 
-    public function getStatus(): string
+    public function getEstado(): string
     {
-        return $this->status;
+        return $this->estado;
     }
 
-    public function setStatus(string $status): self
+    public function setEstado(string $estado): self
     {
-        if (!in_array($status, [self::STATUS_PENDING, self::STATUS_PROCESSING, self::STATUS_COMPLETED, self::STATUS_CANCELLED])) {
+        if (!in_array($estado, [self::STATUS_PENDING, self::STATUS_PROCESSING, self::STATUS_COMPLETED, self::STATUS_CANCELLED])) {
             throw new \InvalidArgumentException('Estado inválido');
         }
-        $this->status = $status;
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, DetallePedido>
-     */
-    public function getDetallesPedido(): Collection
-    {
-        return $this->detallesPedido;
-    }
-
-    public function addDetallePedido(DetallePedido $detallePedido): self
-    {
-        if (!$this->detallesPedido->contains($detallePedido)) {
-            $this->detallesPedido[] = $detallePedido;
-            $detallePedido->setOrder($this);
-        }
-
-        return $this;
-    }
-
-    public function removeDetallePedido(DetallePedido $detallePedido): self
-    {
-        if ($this->detallesPedido->removeElement($detallePedido)) {
-            // set the owning side to null (unless already changed)
-            if ($detallePedido->getOrder() === $this) {
-                $detallePedido->setOrder(null);
-            }
-        }
-
+        $this->estado = $estado;
         return $this;
     }
 

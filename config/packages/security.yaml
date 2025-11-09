@@ -22,7 +22,7 @@ security:
                 check_path: /api/login
                 username_path: username
                 password_path: password
-                success_handler: App\Security\AuthenticationSuccessHandler
+                success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
         api:

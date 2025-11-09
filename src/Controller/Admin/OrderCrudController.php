@@ -27,7 +27,7 @@ class OrderCrudController extends AbstractCrudController
             MoneyField::new('total', 'Total')
                 ->setCurrency('EUR')
                 ->setStoredAsCents(false),
-            ChoiceField::new('estado', 'Estado')
+            ChoiceField::new('status', 'Estado')
                 ->setChoices([
                     'Pendiente' => 'pending',
                     'En Proceso' => 'processing',
