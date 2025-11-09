@@ -1,0 +1,1 @@
+{"version":2,"defects":{"App\\Tests\\Controller\\SecurityControllerTest::testXssPayloadIsHandledCorrectlyByApi":8,"App\\Tests\\Security\\SecurityTest::testFindByEmailIsSafeFromSqlInjection":8},"times":{"App\\Tests\\ExampleTest::testThatSomethingIsTrue":0,"App\\Tests\\Security\\SecurityTest::testFindByEmailIsSafeFromSqlInjection":0.024}}
