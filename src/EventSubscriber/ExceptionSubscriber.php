@@ -101,16 +101,17 @@ class ExceptionSubscriber implements EventSubscriberInterface
 
     private function getErrorMessage(\Throwable $exception, int $statusCode): string
     {
+        // En desarrollo, siempre mostrar el mensaje real para facilitar la depuración.
+        if ($_ENV['APP_ENV'] === 'dev') {
+            return $exception->getMessage();
+        }
+
         // Mensajes de error seguros para producción
         return match ($statusCode) {
             Response::HTTP_UNAUTHORIZED => 'No autenticado. Token requerido.',
             Response::HTTP_FORBIDDEN => 'Acceso denegado. Permisos insuficientes.',
             Response::HTTP_NOT_FOUND => 'Recurso no encontrado.',
-            Response::HTTP_METHOD_NOT_ALLOWED => 'Método no permitido.',
-            Response::HTTP_UNPROCESSABLE_ENTITY => 'Datos de entrada inválidos.',
-            Response::HTTP_TOO_MANY_REQUESTS => 'Demasiadas solicitudes. Inténtalo más tarde.',
-            Response::HTTP_INTERNAL_SERVER_ERROR => 'Error interno del servidor.',
-            default => ($_ENV['APP_ENV'] === 'dev') ? $exception->getMessage() : 'Error en la solicitud.',
+            default => 'Ha ocurrido un error inesperado.',
         };
     }
 }

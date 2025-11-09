@@ -50,8 +50,8 @@ class DashboardController extends AbstractDashboardController
         };
 
         // Estadísticas de órdenes
-        $newOrders = $this->orderRepository->count(['estado' => Order::STATUS_PENDING]);
-        $onHoldOrders = $this->orderRepository->count(['estado' => Order::STATUS_PROCESSING]);
+        $newOrders = $this->orderRepository->count(['status' => Order::STATUS_PENDING]);
+        $onHoldOrders = $this->orderRepository->count(['status' => Order::STATUS_PROCESSING]);
         $totalProducts = $this->productRepository->count([]);
 
         // Obtener datos de ventas según el rango seleccionado

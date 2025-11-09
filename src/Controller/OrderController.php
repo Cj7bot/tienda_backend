@@ -20,6 +20,8 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use App\Service\MailtrapEmailService;
 
 class OrderController extends AbstractController
 {
@@ -28,14 +30,19 @@ class OrderController extends AbstractController
         private Security $security,
         private HubInterface $hub,
         private MailerInterface $mailer,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private Pdf $knpSnappyPdf,
+        private MailtrapEmailService $mailtrapEmailService
     ) {}
 
     #[Route('/api/checkout/process-order', name: 'process_order', methods: ['POST'])]
     public function processOrder(Request $request): Response
     {
-        $knpSnappyPdf = $this->container->get('knp_snappy.pdf');
+        $this->logger->info('Petición recibida en /api/checkout/process-order.');
+        
         $data = json_decode($request->getContent(), true);
+
+        $this->logger->info('Datos recibidos del frontend:', $data ?? []);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             return $this->json(['message' => 'JSON inválido'], Response::HTTP_BAD_REQUEST);
@@ -70,28 +77,35 @@ class OrderController extends AbstractController
             $totalPedido = 0;
 
             foreach ($items as $item) {
+                // Obtener la cantidad del item (soporta múltiples nombres de campo)
+                $cantidad = $item['quantity'] ?? $item['qty'] ?? $item['cantidad'] ?? null;
+                
+                if ($cantidad === null) {
+                    throw new \Exception("El campo 'quantity' es requerido para cada producto. Item recibido: " . json_encode($item));
+                }
+
                 $producto = $this->entityManager->getRepository(Product::class)->find($item['id']);
 
                 if (!$producto) {
                     throw new \Exception("Producto con ID {$item['id']} no encontrado.");
                 }
 
-                if ($producto->getStock() < $item['quantity']) {
+                if ($producto->getStock() < $cantidad) {
                     throw new \Exception("Stock insuficiente para el producto: {$producto->getNombre()}");
                 }
 
                 $detalle = new DetallePedido();
                 $detalle->setPedido($pedido);
                 $detalle->setProducto($producto);
-                $detalle->setCantidad($item['quantity']);
+                $detalle->setCantidad($cantidad);
                 $detalle->setPrecioUnitario((string)$producto->getPrecio());
 
                 $pedido->addDetallePedido($detalle);
 
-                $producto->setStock($producto->getStock() - $item['quantity']);
+                $producto->setStock($producto->getStock() - $cantidad);
                 $this->entityManager->persist($producto);
 
-                $cantidadTotal += $item['quantity'];
+                $cantidadTotal += $cantidad;
                 $totalPedido += $detalle->getSubtotal();
             }
 
@@ -101,42 +115,37 @@ class OrderController extends AbstractController
             $this->entityManager->persist($pedido);
             $this->entityManager->flush();
 
-            // --- Enviar correo de confirmación con PDF (en un bloque try-catch para no detener el flujo) ---
-            try {
-                $this->logger->info('Generando PDF para el pedido ' . $pedido->getIdPedido());
-                $html = $this->renderView('invoice/invoice.html.twig', ['order' => $pedido]);
-                $pdfContent = $knpSnappyPdf->getOutputFromHtml($html);
-                $this->logger->info('PDF generado correctamente.');
-
-                $this->logger->info('Enviando correo de confirmación a ' . $cliente->getEmail());
-                $email = (new Email())
-                    ->from('ventas@pureinkafoods.com')
-                    ->to($cliente->getEmail())
-                    ->subject('Confirmación de tu pedido #' . $pedido->getIdPedido())
-                    ->text('¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.')
-                    ->html('<p>¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.</p>')
-                    ->attach($pdfContent, sprintf('comprobante-pedido-%s.pdf', $pedido->getIdPedido()), 'application/pdf');
-
-                $this->mailer->send($email);
-                $this->logger->info('Correo de confirmación enviado con éxito.');
-            } catch (\Exception $e) {
-                $this->logger->error('Error al generar PDF o enviar correo: ' . $e->getMessage(), ['exception' => $e]);
-            }
+            // --- Enviar comprobante de pago por correo usando Mailtrap ---
+            $this->mailtrapEmailService->sendPaymentReceipt($pedido, $cliente->getEmail());
             // --- Fin del envío de correo ---
 
-            // Publicar actualización a Mercure
-            $update = new Update(
-                '/orders/new',
-                json_encode(['orderId' => $pedido->getIdPedido(), 'total' => $pedido->getTotal(), 'cliente' => $pedido->getCliente()->getNombre()])
-            );
-            $this->hub->publish($update);
+            // Publicar actualización a Mercure (opcional, no crítico)
+            try {
+                $update = new Update(
+                    '/orders/new',
+                    json_encode(['orderId' => $pedido->getIdPedido(), 'total' => $pedido->getTotal(), 'cliente' => $pedido->getCliente()->getNombre()])
+                );
+                $this->hub->publish($update);
+                $this->logger->info('Notificación Mercure enviada con éxito.');
+            } catch (\Exception $e) {
+                $this->logger->warning('No se pudo enviar la notificación Mercure (no crítico): ' . $e->getMessage());
+            }
 
             $this->entityManager->commit();
 
         } catch (\Exception $e) {
-            $this->logger->error('Error al procesar el pedido: ' . $e->getMessage(), ['exception' => $e]);
             $this->entityManager->rollback();
-            return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+
+            $errorDetails = [
+                'error' => true,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ];
+
+            $this->logger->error('Error CRÍTICO al procesar el pedido.', $errorDetails);
+
+            return $this->json($errorDetails, Response::HTTP_BAD_REQUEST);
         }
 
         return $this->json([
@@ -148,7 +157,6 @@ class OrderController extends AbstractController
     #[Route('/order/{id}/invoice', name: 'order_invoice_pdf', methods: ['GET'])]
     public function generateInvoicePdf(Pedido $pedido): Response
     {
-        $knpSnappyPdf = $this->container->get('knp_snappy.pdf');
         if (!$pedido) {
             throw $this->createNotFoundException('El pedido no existe.');
         }
@@ -163,7 +171,7 @@ class OrderController extends AbstractController
 
         // Devolver el PDF como una respuesta para descargar o mostrar en el navegador
         return new PdfResponse(
-            $knpSnappyPdf->getOutputFromHtml($html),
+            $this->knpSnappyPdf->getOutputFromHtml($html),
             $filename
         );
     }
