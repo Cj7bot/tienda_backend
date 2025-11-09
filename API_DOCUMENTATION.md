@@ -68,6 +68,8 @@ if (data.success) {
 ### 2. 🔐 Login de Cliente
 **Endpoint:** `POST /api/login_check`
 
+**Configuración CORS:** Acepta peticiones con credenciales (`credentials: 'include'`)
+
 **Request Body:**
 ```json
 {
@@ -91,6 +93,11 @@ if (data.success) {
   "error": "Credenciales inválidas"
 }
 ```
+
+**Notas importantes:**
+- El endpoint acepta credenciales CORS (`allow_credentials: true`)
+- El campo `username` en la respuesta contiene el nombre del usuario
+- En caso de error, siempre devuelve código 401 con un mensaje de error en JSON
 
 **Ejemplo de uso en JavaScript:**
 ```javascript

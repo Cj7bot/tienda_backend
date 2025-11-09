@@ -77,13 +77,6 @@ body {
     font-size: 12px;
 }
 
-/* Real-time Chart Container */
-.realtime-chart-container {
-    height: 300px;
-    position: relative;
-    margin-top: 16px;
-}
-
 .realtime-chart-card .metric-header {
     display: flex;
     justify-content: space-between;
@@ -197,22 +190,33 @@ body {
 }
 
 /* Chart Containers */
-.chart-container,
-.realtime-chart-container,
-.source-chart-container {
+.chart-container {
     position: relative;
     height: 150px;
 }
 
 .realtime-chart-container {
-    height: 200px;
+    height: 300px;
+    position: relative;
+    margin-top: 16px;
 }
 
 .source-chart-container {
-    height: 200px;
+    height: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+}
+
+/* Make source card match realtime card height */
+.source-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.source-card .source-chart-container {
+    flex-grow: 1;
 }
 
 .chart-actions {

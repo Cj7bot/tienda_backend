@@ -20,6 +20,7 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use App\Service\EmailService;
 
 class OrderController extends AbstractController
 {
@@ -28,7 +29,8 @@ class OrderController extends AbstractController
         private Security $security,
         private HubInterface $hub,
         private MailerInterface $mailer,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private EmailService $emailService
     ) {}
 
     #[Route('/api/checkout/process-order', name: 'process_order', methods: ['POST'])]
@@ -109,15 +111,16 @@ class OrderController extends AbstractController
                 $this->logger->info('PDF generado correctamente.');
 
                 $this->logger->info('Enviando correo de confirmación a ' . $cliente->getEmail());
-                $email = (new Email())
-                    ->from('ventas@pureinkafoods.com')
-                    ->to($cliente->getEmail())
-                    ->subject('Confirmación de tu pedido #' . $pedido->getIdPedido())
-                    ->text('¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.')
-                    ->html('<p>¡Gracias por tu compra! Adjuntamos el comprobante de tu pedido.</p>')
-                    ->attach($pdfContent, sprintf('comprobante-pedido-%s.pdf', $pedido->getIdPedido()), 'application/pdf');
-
-                $this->mailer->send($email);
+                
+                // Usar el EmailService mejorado con template HTML profesional
+                $this->emailService->sendOrderReceiptEmail(
+                    $cliente->getEmail(),
+                    $cliente->getNombre(),
+                    $pedido->getIdPedido(),
+                    (float)$pedido->getTotal(),
+                    $pdfContent
+                );
+                
                 $this->logger->info('Correo de confirmación enviado con éxito.');
             } catch (\Exception $e) {
                 $this->logger->error('Error al generar PDF o enviar correo: ' . $e->getMessage(), ['exception' => $e]);
@@ -143,6 +146,14 @@ class OrderController extends AbstractController
             'message' => 'Pago realizado correctamente',
             'orderId' => $pedido->getIdPedido()
         ], Response::HTTP_CREATED);
+    }
+
+    #[Route('/api/orders', name: 'create_order', methods: ['POST'])]
+    public function createOrder(Request $request): Response
+    {
+        // Este endpoint es un alias de /api/checkout/process-order
+        // para mantener compatibilidad con el frontend
+        return $this->processOrder($request);
     }
 
     #[Route('/order/{id}/invoice', name: 'order_invoice_pdf', methods: ['GET'])]

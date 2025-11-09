@@ -16,14 +16,14 @@ security:
             security: false
 
         login:
-            pattern: ^/api/login
+            pattern: ^/api/login_check
             stateless: true
             json_login:
-                check_path: /api/login
+                check_path: /api/login_check
                 username_path: username
                 password_path: password
-                success_handler: lexik_jwt_authentication.handler.authentication_success
-                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+                success_handler: App\Security\AuthenticationSuccessHandler
+                failure_handler: App\Security\AuthenticationFailureHandler
 
         api:
             pattern: ^/api
@@ -33,11 +33,14 @@ security:
 
     access_control:
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/products, roles: PUBLIC_ACCESS }
         - { path: ^/api/catalog, roles: PUBLIC_ACCESS }
         - { path: ^/api/categories, roles: PUBLIC_ACCESS }
         - { path: ^/api/upload-image, roles: PUBLIC_ACCESS }
         - { path: ^/api/analytics, roles: PUBLIC_ACCESS }
+        - { path: ^/api/orders, roles: PUBLIC_ACCESS }
+        - { path: ^/api/checkout, roles: PUBLIC_ACCESS }
         - { path: ^/api$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
