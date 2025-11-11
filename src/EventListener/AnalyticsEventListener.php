@@ -7,12 +7,20 @@ use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Symfony\Component\Mercure\Hub\HubInterface;
+use Symfony\Component\Mercure\Update;
 
 #[AsEntityListener(event: Events::postPersist, method: 'onProductCreated', entity: Product::class)]
 #[AsEntityListener(event: Events::postPersist, method: 'onOrderCreated', entity: Order::class)]
 class AnalyticsEventListener
 {
+    private HubInterface $hub;
     private array $realtimeEvents = [];
+
+    public function __construct(HubInterface $hub)
+    {
+        $this->hub = $hub;
+    }
 
     public function onProductCreated(Product $product, LifecycleEventArgs $event): void
     {
@@ -65,6 +73,14 @@ class AnalyticsEventListener
         }
         
         file_put_contents($logFile, json_encode($existingEvents, JSON_PRETTY_PRINT));
+
+        // Publicar a Mercure
+        $update = new Update(
+            'https://tiendabackend.com/analytics',
+            json_encode($eventData)
+        );
+
+        $this->hub->publish($update);
     }
 
     public function getRecentEvents(int $limit = 50): array

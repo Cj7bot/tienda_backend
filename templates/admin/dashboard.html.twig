@@ -19,7 +19,7 @@
                 <p class="dashboard-subtitle">¡Bienvenido de vuelta! Aquí está el resumen de tu negocio. 👋</p>
             </div>
             <div class="date-selector">
-                <span class="current-date">Hoy: {{ 'now'|date('F d') }}</span>
+                <span class="current-date">Hoy, {{ 'now'|date('F d', 'America/Lima') }}</span>
             </div>
         </div>
 
@@ -88,208 +88,33 @@
         </div>
 
         <div class="lower-section">
-            <div class="chart-section">
-                <div class="metric-card realtime-chart-card">
-                    <div class="metric-header">
-                        <h3>Real-Time Analytics</h3>
-                        <div class="chart-actions">
-                            <button class="action-btn" onclick="simulateNewEvent()" title="Simular Evento">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button class="action-btn" onclick="loadRealtimeData()" title="Actualizar">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button class="action-btn">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="realtime-chart-container">
-                        <canvas id="realtimeChart" width="400" height="200"></canvas>
+            <div class="metric-card realtime-chart-card">
+                <div class="metric-header">
+                    <h3>Real-Time Analytics</h3>
+                    <div class="chart-actions">
+                        <button class="action-btn" onclick="simulateNewEvent()" title="Simular Evento">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="action-btn" onclick="loadRealtimeData()" title="Actualizar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="action-btn">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
                     </div>
                 </div>
+                <div class="realtime-chart-container">
+                    <canvas id="realtimeChart" width="400" height="250"></canvas>
+                </div>
             </div>
-            
-            <div class="source-section">
-                <div class="metric-card source-card">
-                    <div class="metric-header">
-                        <h3>Source / Medium</h3>
-                    </div>
-                    <div class="source-chart-container">
-                        <canvas id="sourceChart" width="300" height="200"></canvas>
-                    </div>
+            <div class="metric-card source-card">
+                <div class="metric-header">
+                    <h3>Source / Medium</h3>
+                </div>
+                <div class="source-chart-container">
+                    <canvas id="sourceChart" width="300" height="250"></canvas>
                 </div>
             </div>
         </div>
     </div>
-
-    <script>
-        // Initialize charts when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Device Chart (Mobile/Desktop)
-            const deviceCtx = document.getElementById('deviceChart').getContext('2d');
-            new Chart(deviceCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-                    datasets: [{
-                        data: [65, 78, 85, 92, 88, 95, 102, 110, 98, 115, 125, 138],
-                        backgroundColor: '#4F46E5',
-                        borderRadius: 4,
-                        barPercentage: 0.6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            display: false
-                        },
-                        y: {
-                            display: false
-                        }
-                    }
-                }
-            });
-
-            // Realtime Chart
-            const realtimeCtx = document.getElementById('realtimeChart').getContext('2d');
-            const realtimeChart = new Chart(realtimeCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Compras',
-                        data: [],
-                        borderColor: '#10B981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 6,
-                        pointBackgroundColor: '#10B981'
-                    }, {
-                        label: 'Productos Añadidos',
-                        data: [],
-                        borderColor: '#F59E0B',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 6,
-                        pointBackgroundColor: '#F59E0B'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { 
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            },
-                            ticks: {
-                                maxTicksLimit: 8
-                            }
-                        },
-                        y: {
-                            display: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            },
-                            beginAtZero: true
-                        }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    }
-                }
-            });
-
-            // Function to load real-time data
-            function loadRealtimeData() {
-                fetch('/api/analytics/realtime-data')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            realtimeChart.data.labels = data.data.labels;
-                            realtimeChart.data.datasets[0].data = data.data.compras;
-                            realtimeChart.data.datasets[1].data = data.data.productos_creados;
-                            realtimeChart.update('none');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading real-time data:', error);
-                    });
-            }
-
-            // Load initial data
-            loadRealtimeData();
-
-            // Update data every 30 seconds (deshabilitado para usar Mercure)
-            // setInterval(loadRealtimeData, 30000);
-
-            // Function to simulate adding new events (for demo purposes)
-            function simulateNewEvent() {
-                fetch('/api/analytics/add-event', { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Reload chart data after new event
-                            setTimeout(loadRealtimeData, 1000);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error adding event:', error);
-                    });
-            }
-
-            // Simulate new events every 2 minutes for demo
-            setInterval(simulateNewEvent, 120000);
-
-            // Source Chart (Pie/Doughnut)
-            const sourceCtx = document.getElementById('sourceChart').getContext('2d');
-            new Chart(sourceCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Direct', 'Social', 'Email', 'Organic', 'Paid'],
-                    datasets: [{
-                        data: [35, 25, 20, 15, 5],
-                        backgroundColor: ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
-        });
-    </script>
 {% endblock %}

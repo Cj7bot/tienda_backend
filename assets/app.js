@@ -23,3 +23,6 @@ Chart.defaults.color = '#666';
 Chart.defaults.font.family = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
 Chart.defaults.responsive = true;
 Chart.defaults.maintainAspectRatio = false;
+
+// Import dashboard functionality
+import './admin/dashboard.js';

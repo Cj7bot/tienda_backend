@@ -275,12 +275,6 @@ body {
     }
 }
 
-/* Chart Overrides */
-canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
 /* Custom scrollbar */
 ::-webkit-scrollbar {
     width: 8px;

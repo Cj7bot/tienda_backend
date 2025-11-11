@@ -152,6 +152,11 @@
             border-radius: 5px;
             box-shadow: 0 3px 6px rgba(46, 139, 87, 0.3);
         }
+        .conversion-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #ddd;
+        }
         .footer-info {
             margin-top: 40px;
             padding: 20px 30px;
@@ -187,7 +192,7 @@
             </div>
             <div class="invoice-details">
                 <div class="box">#{{ order.idPedido }}</div>
-                <div class="box">{{ order.fechaPedido|date('d/m/Y') }}</div>
+                <div class="box">{{ order.fechaPedido|date('d/m/Y', 'America/Lima') }}</div>
             </div>
         </div>
 
@@ -195,7 +200,7 @@
         <div class="customer-info">
             <p><strong>Cliente:</strong> {{ order.cliente.nombre }} {{ order.cliente.apellido }}</p>
             <p><strong>Email:</strong> {{ order.cliente.email }}</p>
-            <p><strong>Fecha de Pedido:</strong> {{ order.fechaPedido|date('d/m/Y H:i') }}</p>
+            <p><strong>Fecha de Pedido:</strong> {{ order.fechaPedido|date('d/m/Y H:i', 'America/Lima') }} (Hora Lima)</p>
         </div>
 
         <table class="items-table">
@@ -205,7 +210,7 @@
                     <th>Nombre</th>
                     <th class="text-center">Cant.</th>
                     <th>Descripción</th>
-                    <th class="text-right">Precio</th>
+                    <th class="text-right">Precio (USD)</th>
                 </tr>
             </thead>
             <tbody>
@@ -215,7 +220,7 @@
                     <td>{{ item.producto.nombre }}</td>
                     <td class="text-center">{{ item.cantidad }}</td>
                     <td>{{ item.producto.descripcion|slice(0, 50) }}...</td>
-                    <td class="text-right">S/ {{ item.precioUnitario|number_format(2, '.', ',') }}</td>
+                    <td class="text-right">$ {{ item.precioUnitario|number_format(2, '.', ',') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -226,22 +231,38 @@
                 <tbody>
                     <tr>
                         <td class="label">Sub-Total</td>
-                        <td class="text-right">S/ {{ (order.total / 1.18)|number_format(2, '.', ',') }}</td>
+                        <td class="text-right">$ {{ (order.total / 1.18)|number_format(2, '.', ',') }}</td>
                     </tr>
                     <tr>
                         <td class="label">Taxes (18%)</td>
-                        <td class="text-right">S/ {{ (order.total - (order.total / 1.18))|number_format(2, '.', ',') }}</td>
+                        <td class="text-right">$ {{ (order.total - (order.total / 1.18))|number_format(2, '.', ',') }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Total</td>
-                        <td class="text-right">S/ {{ order.total|number_format(2, '.', ',') }}</td>
+                        <td class="label">Total (USD)</td>
+                        <td class="text-right">$ {{ order.total|number_format(2, '.', ',') }}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="grand-total">
-            <span class="total-bar">Total: S/ {{ order.total|number_format(2, '.', ',') }}</span>
+            <span class="total-bar">Total: $ {{ order.total|number_format(2, '.', ',') }}</span>
+        </div>
+
+        <!-- Conversión a Soles -->
+        <div class="totals-section conversion-section">
+            <table class="totals-table">
+                <tbody>
+                    <tr>
+                        <td class="label">Tasa de Cambio (USD a PEN)</td>
+                        <td class="text-right">3.34</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Total en Soles</td>
+                        <td class="text-right">S/ {{ (order.total * 3.34)|number_format(2, '.', ',') }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <!-- Footer con información adicional -->

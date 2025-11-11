@@ -30,13 +30,13 @@ class OrderController extends AbstractController
         private HubInterface $hub,
         private MailerInterface $mailer,
         private LoggerInterface $logger,
-        private EmailService $emailService
+        private EmailService $emailService,
+        private Pdf $knpSnappyPdf
     ) {}
 
     #[Route('/api/checkout/process-order', name: 'process_order', methods: ['POST'])]
     public function processOrder(Request $request): Response
     {
-        $knpSnappyPdf = $this->container->get('knp_snappy.pdf');
         $data = json_decode($request->getContent(), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -57,12 +57,33 @@ class OrderController extends AbstractController
 
         $pedido = new Pedido();
         $pedido->setCliente($cliente);
-        $pedido->setFechaPedido(new \DateTime());
+        $pedido->setFechaPedido(new \DateTime('now', new \DateTimeZone('America/Lima')));
         $pedido->setEstado('procesando');
 
+        // Validar datos requeridos del frontend
         $items = $data['items'] ?? [];
         if (empty($items)) {
-            return $this->json(['message' => 'El carrito no puede estar vacío.'], Response::HTTP_BAD_REQUEST);
+            return $this->json([
+                'success' => false,
+                'message' => 'El carrito no puede estar vacío.',
+                'emailSent' => false,
+                'emailError' => null
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Guardar información adicional del pedido (dirección, método de pago, etc.)
+        $address = $data['address'] ?? null;
+        $deliveryOption = $data['deliveryOption'] ?? 'pickup';
+        $paymentMethod = $data['paymentMethod'] ?? 'credit';
+        $termsAccepted = $data['termsAccepted'] ?? false;
+        
+        if (!$termsAccepted) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Debe aceptar los términos y condiciones.',
+                'emailSent' => false,
+                'emailError' => null
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         $this->entityManager->beginTransaction();
@@ -72,28 +93,36 @@ class OrderController extends AbstractController
             $totalPedido = 0;
 
             foreach ($items as $item) {
-                $producto = $this->entityManager->getRepository(Product::class)->find($item['id']);
+                // El frontend puede enviar 'id' o 'productId'
+                $productId = $item['id'] ?? $item['productId'] ?? null;
+                $quantity = $item['cantidad'] ?? $item['quantity'] ?? 1;
+                
+                if (!$productId) {
+                    throw new \Exception("ID de producto no especificado en el item.");
+                }
+                
+                $producto = $this->entityManager->getRepository(Product::class)->find($productId);
 
                 if (!$producto) {
-                    throw new \Exception("Producto con ID {$item['id']} no encontrado.");
+                    throw new \Exception("Producto con ID {$productId} no encontrado.");
                 }
 
-                if ($producto->getStock() < $item['quantity']) {
+                if ($producto->getStock() < $quantity) {
                     throw new \Exception("Stock insuficiente para el producto: {$producto->getNombre()}");
                 }
 
                 $detalle = new DetallePedido();
                 $detalle->setPedido($pedido);
                 $detalle->setProducto($producto);
-                $detalle->setCantidad($item['quantity']);
+                $detalle->setCantidad($quantity);
                 $detalle->setPrecioUnitario((string)$producto->getPrecio());
 
                 $pedido->addDetallePedido($detalle);
 
-                $producto->setStock($producto->getStock() - $item['quantity']);
+                $producto->setStock($producto->getStock() - $quantity);
                 $this->entityManager->persist($producto);
 
-                $cantidadTotal += $item['quantity'];
+                $cantidadTotal += $quantity;
                 $totalPedido += $detalle->getSubtotal();
             }
 
@@ -104,16 +133,18 @@ class OrderController extends AbstractController
             $this->entityManager->flush();
 
             // --- Enviar correo de confirmación con PDF (en un bloque try-catch para no detener el flujo) ---
+            $emailSent = false;
+            $emailError = null;
             try {
                 $this->logger->info('Generando PDF para el pedido ' . $pedido->getIdPedido());
                 $html = $this->renderView('invoice/invoice.html.twig', ['order' => $pedido]);
-                $pdfContent = $knpSnappyPdf->getOutputFromHtml($html);
+                $pdfContent = $this->knpSnappyPdf->getOutputFromHtml($html);
                 $this->logger->info('PDF generado correctamente.');
 
                 $this->logger->info('Enviando correo de confirmación a ' . $cliente->getEmail());
                 
                 // Usar el EmailService mejorado con template HTML profesional
-                $this->emailService->sendOrderReceiptEmail(
+                $emailSent = $this->emailService->sendOrderReceiptEmail(
                     $cliente->getEmail(),
                     $cliente->getNombre(),
                     $pedido->getIdPedido(),
@@ -121,31 +152,57 @@ class OrderController extends AbstractController
                     $pdfContent
                 );
                 
-                $this->logger->info('Correo de confirmación enviado con éxito.');
+                if ($emailSent) {
+                    $this->logger->info('Correo de confirmación enviado con éxito.');
+                } else {
+                    $this->logger->warning('El servicio de email retornó false - revisar logs del EmailService');
+                }
             } catch (\Exception $e) {
-                $this->logger->error('Error al generar PDF o enviar correo: ' . $e->getMessage(), ['exception' => $e]);
+                $emailError = $e->getMessage();
+                $this->logger->error('Error al generar PDF o enviar correo: ' . $emailError, [
+                    'exception' => $e,
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
             // --- Fin del envío de correo ---
 
-            // Publicar actualización a Mercure
-            $update = new Update(
-                '/orders/new',
-                json_encode(['orderId' => $pedido->getIdPedido(), 'total' => $pedido->getTotal(), 'cliente' => $pedido->getCliente()->getNombre()])
-            );
-            $this->hub->publish($update);
+            // Publicar actualización a Mercure (opcional - no detiene el flujo si falla)
+            try {
+                $update = new Update(
+                    '/orders/new',
+                    json_encode(['orderId' => $pedido->getIdPedido(), 'total' => $pedido->getTotal(), 'cliente' => $pedido->getCliente()->getNombre()])
+                );
+                $this->hub->publish($update);
+                $this->logger->info('Notificación Mercure publicada correctamente.');
+            } catch (\Exception $e) {
+                $this->logger->warning('No se pudo publicar a Mercure (no crítico): ' . $e->getMessage());
+            }
 
             $this->entityManager->commit();
 
         } catch (\Exception $e) {
             $this->logger->error('Error al procesar el pedido: ' . $e->getMessage(), ['exception' => $e]);
             $this->entityManager->rollback();
-            return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            return $this->json([
+                'success' => false,
+                'message' => 'Error al procesar el pedido: ' . $e->getMessage(),
+                'emailSent' => false,
+                'emailError' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
+        // Respuesta en el formato esperado por el frontend
+        $responseMessage = $emailSent 
+            ? 'Pedido procesado exitosamente' 
+            : 'Pedido creado pero email no enviado';
+            
         return $this->json([
-            'message' => 'Pago realizado correctamente',
-            'orderId' => $pedido->getIdPedido()
-        ], Response::HTTP_CREATED);
+            'success' => true,
+            'orderId' => 'ORD-' . $pedido->getIdPedido(),
+            'emailSent' => $emailSent,
+            'emailError' => $emailError,
+            'message' => $responseMessage
+        ], Response::HTTP_OK);
     }
 
     #[Route('/api/orders', name: 'create_order', methods: ['POST'])]
@@ -159,7 +216,6 @@ class OrderController extends AbstractController
     #[Route('/order/{id}/invoice', name: 'order_invoice_pdf', methods: ['GET'])]
     public function generateInvoicePdf(Pedido $pedido): Response
     {
-        $knpSnappyPdf = $this->container->get('knp_snappy.pdf');
         if (!$pedido) {
             throw $this->createNotFoundException('El pedido no existe.');
         }
@@ -174,7 +230,7 @@ class OrderController extends AbstractController
 
         // Devolver el PDF como una respuesta para descargar o mostrar en el navegador
         return new PdfResponse(
-            $knpSnappyPdf->getOutputFromHtml($html),
+            $this->knpSnappyPdf->getOutputFromHtml($html),
             $filename
         );
     }

@@ -43,7 +43,7 @@ class Pedido
 
     public function __construct()
     {
-        $this->fecha_pedido = new \DateTime();
+        $this->fecha_pedido = new \DateTime('now', new \DateTimeZone('America/Lima'));
         $this->detallesPedido = new ArrayCollection();
         $this->detalleBoletas = new ArrayCollection();
         $this->detalleFacturas = new ArrayCollection();

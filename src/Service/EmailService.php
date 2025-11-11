@@ -475,10 +475,11 @@ HTML;
     }
 
     /**
-     * Obtiene la fecha actual formateada
+     * Obtiene la fecha actual formateada en zona horaria de Lima
      */
     private function getCurrentDate(): string
     {
-        return date('d/m/Y H:i');
+        $date = new \DateTime('now', new \DateTimeZone('America/Lima'));
+        return $date->format('d/m/Y H:i');
     }
 }
